@@ -1,0 +1,45 @@
+# 1. Archivos del sistema operativo (macOS)
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# 2. Archivos de Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Entornos virtuales de Python (por si usas uno)
+venv/
+env/
+.venv/
+
+# 3. Configuración local del editor (VS Code)
+.vscode/
+
+# 4. Datos generados por tu simulador/telemetría
+# Ignoramos todos los CSV para no saturar el repositorio con miles de registros
+database/
+*.csv
+*.log
+*.db
+
+
+# Excepciones (si tienes un CSV de prueba base que SÍ quieres subir, quítale el #)
+# !datos_prueba_oficial.csv
+.DS_Store
+
+# =========================
+# Archivos de PyInstaller
+# =========================
+build/
+dist/
+*.spec
+
+# =========================
+# Caché de Python
+# =========================
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
