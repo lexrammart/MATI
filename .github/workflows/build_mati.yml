@@ -1,9 +1,5 @@
 name: Build MATI Cross-Platform
 
-# Variable global para forzar el uso de Node 24 y evitar avisos de depreciación
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 on:
   push:
     branches: [ "fix/linux-mint-compatibility" ]
@@ -15,10 +11,15 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
+    
+    # 1. Ponemos la variable AQUÍ, dentro del job, para que no haya duda
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     steps:
+    # 2. Actualizamos a las versiones que ya soportan Node 24 nativamente
     - name: Descargar el código
-      uses: actions/checkout@v4
+      uses: actions/checkout@v4 # V4 sigue siendo estándar, pero forzada por el env
 
     - name: Instalar Python
       uses: actions/setup-python@v5
@@ -29,7 +30,6 @@ jobs:
       if: matrix.os == 'ubuntu-latest'
       run: |
         sudo apt-get update
-        # Se utiliza libwebkit2gtk-4.1-0 para compatibilidad con Ubuntu 24.04 / Mint
         sudo apt-get install -y libgirepository1.0-dev gcc libcairo2-dev pkg-config python3-dev gir1.2-gtk-3.0 libwebkit2gtk-4.1-0
 
     - name: Instalar librerías de Python
@@ -43,17 +43,15 @@ jobs:
     - name: Compilar ejecutable (Windows)
       if: matrix.os == 'windows-latest'
       run: |
-        # En Windows el separador de --add-data es ";"
         pyinstaller --windowed --onefile --name "MATI" --add-data "frontend;frontend" main.py
 
     - name: Compilar ejecutable (Linux y Mac)
       if: matrix.os != 'windows-latest'
       run: |
-        # En Linux/Mac el separador es ":" e incluimos los imports de GObject Introspection
         pyinstaller --windowed --onefile --name "MATI" --add-data "frontend:frontend" --hidden-import gi --hidden-import gi.repository.Gtk --hidden-import gi.repository.Gdk --hidden-import gi.repository.WebKit2 main.py
 
     - name: Guardar Artifacts (Descargables)
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v4 # Si v4 falla, prueba cambiar a v5
       with:
         name: MATI-${{ matrix.os }}
         path: dist/
