@@ -1,8 +1,8 @@
 import urllib.request
 import json
+import ssl
 
-# Aquí vas a controlar tu versión local (la que estás programando)
-ACTUAL_VERSION = "1.1.4"
+ACTUAL_VERSION = "1.1.5"
 
 
 def check_update():
@@ -12,25 +12,35 @@ def check_update():
     """
     # Esta es la API oficial de GitHub apuntando a tu repo público
     url = "https://api.github.com/repos/lexrammart/MATI-Releases/releases/latest"
-    # url = "https://api.github.com/repos/microsoft/vscode/releases/latest"
 
     try:
+        # 1. EL PARCHE SSL: Creamos un contexto que ignora la verificación del certificado
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+
         # Hacemos la petición (simulando ser un navegador básico para que GitHub no nos bloquee)
         req = urllib.request.Request(url, headers={"User-Agent": "MATI-Updater"})
-        with urllib.request.urlopen(req, timeout=5) as response:
+
+        # Le pasamos el contexto SSL modificado a la petición
+        with urllib.request.urlopen(req, timeout=5, context=ctx) as response:
             data = json.loads(response.read().decode())
 
-        # GitHub guarda la versión en "tag_name" (ej. "v1.1.1")
+        # GitHub guarda la versión en "tag_name" (ej. "v1.1.5")
         latest_version_tag = data.get("tag_name", "")
 
-        # Le quitamos la 'v' para poder comparar los puros números
-        latest_version = latest_version_tag.replace("v", "")
+        # Le quitamos la 'v' y espacios fantasma
+        latest_version = latest_version_tag.replace("v", "").strip()
+
+        # 2. EL PARCHE MATEMÁTICO: Convertimos "1.1.5" a (1, 1, 5) para comparar exacto
+        version_github = tuple(map(int, latest_version.split(".")))
+        version_local = tuple(map(int, ACTUAL_VERSION.split(".")))
 
         # El cuerpo del Release en GitHub nos servirá como changelog
         changelog = data.get("body", "Mejoras de rendimiento y telemetría.")
 
         # Si la versión de GitHub es mayor a la tuya, disparamos la alerta
-        if latest_version > ACTUAL_VERSION:
+        if version_github > version_local:
             datos_reales = {"version": latest_version, "changelog": changelog}
             return (True, datos_reales)
 
