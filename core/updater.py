@@ -2,8 +2,9 @@ import urllib.request
 import json
 import ssl
 
-
+# Asegúrate de que este número sea el que quieres para tu versión local
 ACTUAL_VERSION = "1.1.7"
+
 
 def check_update():
     """
@@ -13,33 +14,11 @@ def check_update():
     url = "https://api.github.com/repos/lexrammart/MATI-Releases/releases/latest"
 
     try:
-<<<<<<< HEAD
-        # 1. EL PARCHE SSL: Creamos un contexto que ignora la verificación del certificado
-=======
-        # 1. PARCHE SSL
->>>>>>> fix/ssl-cert-updater
+        # 1. PARCHE SSL para que funcione en el ejecutable
         ctx = ssl.create_default_context()
         ctx.check_hostname = False
         ctx.verify_mode = ssl.CERT_NONE
 
-<<<<<<< HEAD
-        # Hacemos la petición (simulando ser un navegador básico para que GitHub no nos bloquee)
-        req = urllib.request.Request(url, headers={"User-Agent": "MATI-Updater"})
-
-        # Le pasamos el contexto SSL modificado a la petición
-        with urllib.request.urlopen(req, timeout=5, context=ctx) as response:
-            data = json.loads(response.read().decode())
-
-        # GitHub guarda la versión en "tag_name" (ej. "v1.1.5")
-        latest_version_tag = data.get("tag_name", "")
-
-        # Le quitamos la 'v' y espacios fantasma
-        latest_version = latest_version_tag.replace("v", "").strip()
-
-        # 2. EL PARCHE MATEMÁTICO: Convertimos "1.1.5" a (1, 1, 5) para comparar exacto
-        version_github = tuple(map(int, latest_version.split(".")))
-        version_local = tuple(map(int, ACTUAL_VERSION.split(".")))
-=======
         req = urllib.request.Request(url, headers={"User-Agent": "MATI-Updater"})
 
         with urllib.request.urlopen(req, timeout=5, context=ctx) as response:
@@ -47,31 +26,27 @@ def check_update():
 
         latest_version_tag = data.get("tag_name", "")
 
-        # CHISMOSAFE: Imprimimos qué diablos nos mandó GitHub
+        # INFO para consola
         print(f"[*] INFO: GitHub dice que la última versión es: '{latest_version_tag}'")
 
+        # Limpiamos la 'v', espacios y PUNTOS extra (como el v.1.1.6)
         latest_version = latest_version_tag.replace("v", "").strip(" .")
+
         if not latest_version:
-            print("Advertencia: El tag llegó completamente vacío.")
+            print("Advertencia: El tag llegó vacío.")
             return None
 
-        # 2. PARCHE MATEMÁTICO CON BLINDAJE EXTRA
+        # 2. PARCHE MATEMÁTICO CON BLINDAJE
         try:
             version_github = tuple(map(int, latest_version.split(".")))
             version_local = tuple(map(int, ACTUAL_VERSION.split(".")))
         except ValueError:
-            print(
-                f"Error matemático: El tag '{latest_version_tag}' tiene un formato que no se puede comparar."
-            )
+            print(f"Error matemático: El tag '{latest_version_tag}' no es válido.")
             return None
->>>>>>> fix/ssl-cert-updater
 
         changelog = data.get("body", "Mejoras de rendimiento y telemetría.")
 
-<<<<<<< HEAD
-        # Si la versión de GitHub es mayor a la tuya, disparamos la alerta
-=======
->>>>>>> fix/ssl-cert-updater
+        # Comparación final
         if version_github > version_local:
             datos_reales = {"version": latest_version, "changelog": changelog}
             return (True, datos_reales)
