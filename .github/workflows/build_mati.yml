@@ -2,14 +2,15 @@ name: Build MATI Cross-Platform
 
 on:
   push:
-    branches: [ "main" ] # Se activa automáticamente al hacer merge a main
-  workflow_dispatch:     # Mantiene el botón manual por si las dudas
+    branches: [ "main" ]
+  workflow_dispatch:
 
 jobs:
   build:
     strategy:
+      fail-fast: false # Si Mac falla, deja que Windows termine (y viceversa)
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [windows-latest, macos-latest] # Adiós Linux por ahora
     runs-on: ${{ matrix.os }}
     
     env:
@@ -24,31 +25,21 @@ jobs:
       with:
         python-version: '3.10'
 
-    - name: Instalar dependencias de sistema (Solo Linux)
-      if: matrix.os == 'ubuntu-latest'
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y libgirepository1.0-dev gcc libcairo2-dev pkg-config python3-dev gir1.2-gtk-3.0 libwebkit2gtk-4.1-0
-
     - name: Instalar librerías de Python
       run: |
         pip install pyinstaller pywebview
-        if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
-          pip install PyGObject==3.48.2
-        fi
       shell: bash
 
     - name: Compilar ejecutable (Windows)
       if: matrix.os == 'windows-latest'
-      # Fíjate cómo en Windows usamos punto y coma (;) para separar las carpetas
       run: |
         pyinstaller --windowed --onefile --name "MATI" --add-data "frontend;frontend" --add-data "core;core" --add-data "rcs;rcs" --add-data "assets;assets" main.py
 
-    - name: Compilar ejecutable (Linux y Mac)
-      if: matrix.os != 'windows-latest'
-      # En Mac/Linux usamos dos puntos (:) para separar las carpetas
+    - name: Compilar ejecutable (Mac)
+      if: matrix.os == 'macos-latest'
+      # Quitamos los imports raros de Gtk que solo servían para Linux y estaban rompiendo Mac
       run: |
-        pyinstaller --windowed --onefile --name "MATI" --add-data "frontend:frontend" --add-data "core:core" --add-data "rcs:rcs" --add-data "assets:assets" --hidden-import gi --hidden-import gi.repository.Gtk --hidden-import gi.repository.Gdk --hidden-import gi.repository.WebKit2 main.py
+        pyinstaller --windowed --onefile --name "MATI" --add-data "frontend:frontend" --add-data "core:core" --add-data "rcs:rcs" --add-data "assets:assets" main.py
 
     - name: Guardar Artifacts (Descargables)
       uses: actions/upload-artifact@v4
