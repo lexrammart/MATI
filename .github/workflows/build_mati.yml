@@ -38,13 +38,12 @@ jobs:
           target_commitish: main
           tag_name: ${{ github.ref_name }}
           files: dist/MATI.exe
-
-      # --- BUILD MAC (Para tu Mac Air M1) ---
+          
       - name: Build Mac
         if: matrix.os == 'macos-latest'
         run: |
-          # Usamos universal2 para que corra nativo en tu procesador M1
-          pyinstaller --noconfirm --windowed --name "MATI" \
+          # Agregamos --onefile para que sea un solo ejecutable sólido
+          pyinstaller --noconfirm --windowed --onefile --name "MATI" \
           --icon="frontend/assets/icon.icns" \
           --target-arch universal2 \
           --add-data "frontend:frontend" \
