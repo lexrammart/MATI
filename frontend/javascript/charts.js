@@ -68,10 +68,9 @@ function draw(x, y) {
 
   // Punto indicador de posición actual
   ctx.beginPath();
-  ctx.shadowBlur = 100;
+  ctx.fillStyle = "#f0f0f0";
   ctx.arc(sx, sy, 8, 0, Math.PI * 2);
   ctx.fill();
-  ctx.shadowBlur = 0;
 }
 
 /**
