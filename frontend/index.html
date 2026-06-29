@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>MATI</title>
   <link rel="stylesheet" href="css/main.css" />
+  <script src="javascript/hammer.min.js"></script>
   <script src="javascript/chart.min.js"></script>
   <script src="javascript/chartjs-zoom.min.js"></script>
 </head>
@@ -26,8 +27,8 @@
     <span id="rec-timer" style="font-family: 'Roboto Mono'; font-size: 0.8rem; display: none">00:00</span>
 
     <div class="menu-divider"></div>
-    <button id="btn-tab-telemetry" class="tab-button active" onclick="switchTab('telemetry')" data-tooltip="ANÁLISIS">
-      <img src="assets/menu-bar/analisys-icon.svg" alt="Análisis" class="menu-icon">
+    <button id="btn-tab-telemetry" class="tab-button active" onclick="switchTab('telemetry')" data-tooltip="DASHBOARD">
+      <img src="assets/menu-bar/analisys-icon.svg" alt="DASHBOARD" class="menu-icon">
     </button>
     <button id="btn-tab-charts" class="tab-button" onclick="switchTab('charts')" data-tooltip="GRÁFICAS">
       <img src="assets/menu-bar/charts-icon.svg" alt="Gráficas" class="menu-icon">
@@ -44,8 +45,7 @@
           TIEMPO
         </span>
 
-        <input type="range" id="historySlider" min="0" value="0" step="0.5"
-          style="flex: 1; cursor: pointer; accent-color: var(--color-tab); height: 4px; background: #333; border: none; outline: none; border-radius: 5px; margin: 0;">
+        <input type="range" id="historySlider" min="0" value="0" step="0.5">
 
         <span
           style="color: #fff; font-family: 'Roboto Mono'; font-size: 0.9rem; white-space: nowrap; width: 100px; text-align: right;">
@@ -57,11 +57,11 @@
     </div>
 
 
-    <button id="btn-clear" onclick="clearChartData()" class="tab-button" data-tooltip="LIMPIAR TODO">
+    <button id="btn-clear" onclick="clearChartData()" class="tab-button" data-tooltip="LIMPIAR DATOS">
       <img src="assets/menu-bar/trash-icon.svg" alt="Limpiar" class="menu-icon">
     </button>
     <div class="menu-divider"></div>
-    <button class="tab-button btn-info" onclick="toggleModal()" data-tooltip="INFORMACIÓN">
+    <button class="tab-button btn-info" onclick="toggleModal()" data-tooltip="INFO">
       <img src="assets/menu-bar/info-icon.svg" alt="Info" class="menu-icon">
     </button>
   </div>
@@ -122,7 +122,7 @@
             </div>
           </div>
 
-          <div>
+          <!-- <div>
             <div class="col-header">Temperatura (°C)</div>
             <div class="sensor-column-card">
               <div class="sensor-row">
@@ -150,48 +150,46 @@
                 </div>
               </div>
             </div>
-          </div>
-
-          <div style="display: flex; flex-direction: column; gap: 15px; height: 100%;">
-            <div style="flex: 1; display: flex; flex-direction: column;">
-              <div class="col-header">RPMs</div>
-              <div class="sensor-column-card" style="flex: 1;">
-                <div class="sensor-row">
-                  <div class="sensor-unit"><span class="unit-label">FI</span><span class="rpm-value"
-                      id="rpm-fi">0</span></div>
-                  <div class="sensor-unit"><span class="unit-label">FD</span><span class="rpm-value"
-                      id="rpm-fd">0</span></div>
-                </div>
-                <div class="sensor-row">
-                  <div class="sensor-unit"><span class="unit-label">TI</span><span class="rpm-value"
-                      id="rpm-ti">0</span></div>
-                  <div class="sensor-unit"><span class="unit-label">TD</span><span class="rpm-value"
-                      id="rpm-td">0</span></div>
-                </div>
-              </div>
-            </div>
-
-            <div style="flex: 1; display: flex; flex-direction: column;">
-              <div class="col-header">Freno / Acelerador</div>
-              <div class="pedals-wrapper"
-                style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
-                <div class="pedals-container">
-                  <div class="pedal-group">
-                    <div class="pedal-track">
-                      <div id="bar-brake" class="pedal-fill" style="background: var(--color-neg)"></div>
-                    </div>
-                    <div id="val-brake" class="pedal-val-text">0.0</div>
+          </div> -->
+          <div style="flex: 1; display: flex; flex-direction: column; height: 100%;">
+            <div class="col-header">Freno / Acelerador</div>
+            <div class="pedals-wrapper"
+              style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
+              <div class="pedals-container">
+                <div class="pedal-group">
+                  <div class="pedal-track">
+                    <div id="bar-brake" class="pedal-fill" style="background: var(--color-neg)"></div>
                   </div>
-                  <div class="pedal-group">
-                    <div class="pedal-track">
-                      <div id="bar-throttle" class="pedal-fill" style="background: var(--color-pos)"></div>
-                    </div>
-                    <div id="val-throttle" class="pedal-val-text">0.0</div>
+                  <div id="val-brake" class="pedal-val-text">0.0</div>
+                </div>
+                <div class="pedal-group">
+                  <div class="pedal-track">
+                    <div id="bar-throttle" class="pedal-fill" style="background: var(--color-pos)"></div>
                   </div>
+                  <div id="val-throttle" class="pedal-val-text">0.0</div>
                 </div>
               </div>
             </div>
           </div>
+
+          <div style="flex: 1; display: flex; flex-direction: column; height: 100%;">
+            <div class="col-header">RPM</div>
+            <div class="sensor-column-card" style="flex: 1;">
+              <div class="sensor-row">
+                <div class="sensor-unit"><span class="unit-label">FI</span><span class="rpm-value" id="rpm-fi">0</span>
+                </div>
+                <div class="sensor-unit"><span class="unit-label">FD</span><span class="rpm-value" id="rpm-fd">0</span>
+                </div>
+              </div>
+              <div class="sensor-row">
+                <div class="sensor-unit"><span class="unit-label">TI</span><span class="rpm-value" id="rpm-ti">0</span>
+                </div>
+                <div class="sensor-unit"><span class="unit-label">TD</span><span class="rpm-value" id="rpm-td">0</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
     </div>

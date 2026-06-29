@@ -91,6 +91,27 @@ function chartOptions() {
     scales: {
       x: {
         type: "linear",
+        afterBuildTicks: function(scale) {
+          const min = scale.min;
+          const max = scale.max;
+          const range = max - min;
+          if (range <= 0) return;
+          
+          let dataRange = range;
+          if (typeof isHistoryMode !== 'undefined' && !isHistoryMode) {
+            dataRange = range / 1.025;
+          }
+          
+          let numTicks = 6;
+          if (dataRange <= 15) numTicks = 5;
+          
+          const step = dataRange / numTicks;
+          
+          scale.ticks = [];
+          for (let i = 0; i <= numTicks; i++) {
+            scale.ticks.push({ value: min + i * step });
+          }
+        },
         title: {
           display: true,
           text: "TIEMPO ᴍᴍ:ss",
@@ -99,7 +120,10 @@ function chartOptions() {
         ticks: {
           color: "#adadad",
           callback: function (value) {
-            return formatTelemetryTime(value);
+            if (typeof formatTelemetryTime === 'function') {
+              return formatTelemetryTime(value);
+            }
+            return value;
           },
           font: {
             family: "'Roboto Mono', monospace",
@@ -115,10 +139,63 @@ function chartOptions() {
       },
     },
     plugins: {
-      legend: { display: false }
-
+      legend: { display: false },
+      zoom: {
+        limits: {
+          x: {
+            min: 0, // No permitir scrollear a tiempo negativo
+            minRange: 10, // Mínimo 10 segundos de zoom in (para evitar etiquetas sin decimales repetidas)
+            maxRange: 60 // Máximo 60 segundos (1 minuto) de zoom out
+          }
+        },
+        pan: {
+          enabled: true,
+          mode: 'x',
+          onPan: syncCharts
+        },
+        zoom: {
+          wheel: { enabled: true },
+          pinch: { enabled: true },
+          mode: 'x',
+          onZoom: syncCharts
+        }
+      }
     }
   };
+}
+
+/**
+ * Sincroniza todas las gráficas y el slider con la ventana de zoom actual.
+ * Llamada automáticamente por los eventos onZoom y onPan de Chart.js.
+ */
+function syncCharts({ chart }) {
+  const min = chart.scales.x.min;
+  const max = chart.scales.x.max;
+  
+  charts.forEach(c => {
+    if (c !== chart) {
+      c.options.scales.x.min = min;
+      c.options.scales.x.max = max;
+      c.update('none');
+    }
+  });
+
+  const slider = document.getElementById('historySlider');
+  const timeLabel = document.getElementById('timeline-val');
+  if (slider && slider.parentElement.style.display !== 'none') {
+    const windowSize = max - min;
+    const absMax = chart.options.plugins.zoom.limits.x.max;
+    if (absMax !== undefined) {
+      slider.max = Math.max(0, absMax - windowSize);
+    }
+    slider.value = min;
+    const percent = (slider.max > 0) ? (slider.value / slider.max) * 100 : 0;
+    slider.style.setProperty('--slider-progress', `${percent}%`);
+    
+    if (typeof formatTelemetryTime === 'function') {
+      timeLabel.innerText = `${formatTelemetryTime(min)} - ${formatTelemetryTime(max)}`;
+    }
+  }
 }
 
 // Inicialización de las 4 gráficas del dashboard
@@ -127,6 +204,30 @@ const charts = [1, 2, 3, 4].map((n) => new Chart(document.getElementById(`teleme
   data: { datasets: [] },
   options: chartOptions(),
 }));
+
+// Añadir evento para restablecer el zoom con doble clic
+charts.forEach(chart => {
+  if (chart.canvas) {
+    chart.canvas.addEventListener('dblclick', () => {
+      if (typeof isHistoryMode !== 'undefined' && isHistoryMode) {
+        // En historial: mantener el punto de inicio actual pero reiniciar la ventana a 60s
+        let currentMin = chart.options.scales.x.min || 0;
+        let newMax = currentMin + 60;
+        charts.forEach(c => {
+          c.resetZoom('none');
+          c.options.scales.x.min = currentMin;
+          c.options.scales.x.max = newMax;
+          c.update('none');
+        });
+        const slider = document.getElementById('historySlider');
+        if (slider) slider.dispatchEvent(new Event('input'));
+      } else {
+        // En tiempo real: simplemente reiniciar el zoom para que el auto-scroll retome el control
+        charts.forEach(c => c.resetZoom());
+      }
+    });
+  }
+});
 
 /**
  * Construye los objetos de datos para Chart.js basados en las métricas seleccionadas.
@@ -186,12 +287,34 @@ function addTelemetrySample(d, timeSeconds) {
       });
     }
 
+    let defaultWindow = 60;
+    if (timeSeconds < 60) {
+      defaultWindow = Math.max(15, timeSeconds);
+    }
+
+    let windowSize = defaultWindow;
+    if (chart.isZoomedOrPanned && chart.isZoomedOrPanned()) {
+      if (chart.options.scales.x.max !== undefined && chart.options.scales.x.min !== undefined) {
+        const currentWindow = chart.options.scales.x.max - chart.options.scales.x.min;
+        if (currentWindow > 0 && currentWindow <= 60) {
+          windowSize = currentWindow;
+        }
+      }
+    }
+
+    const paddingRight = windowSize * 0.025; // 2.5% de espacio visual a la derecha
+
     let xMax, xMin;
-    if (timeSeconds <= 10) {
-      xMax = 10; xMin = 0;
+    if (timeSeconds <= windowSize) {
+      xMax = windowSize + paddingRight; 
+      xMin = 0;
     } else {
-      xMax = Math.ceil(timeSeconds / 10) * 10;
-      xMin = Math.max(0, xMax - 60); // Ventana de 60 segundos
+      xMax = timeSeconds + paddingRight;
+      xMin = timeSeconds - windowSize;
+    }
+
+    if (chart.options.plugins && chart.options.plugins.zoom) {
+      chart.options.plugins.zoom.limits.x.max = Math.max(60, xMax);
     }
 
     chart.options.scales.x.max = xMax;
